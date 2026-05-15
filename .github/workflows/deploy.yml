@@ -1,0 +1,42 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            echo "=== Starting deployment ==="
+            
+            # Go to project directory
+            cd /opt/base-conocimiento || exit 1
+            
+            # Pull latest changes
+            echo "Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Stop existing containers
+            echo "Stopping containers..."
+            docker-compose down
+            
+            # Build and start
+            echo "Building and starting..."
+            docker-compose build --no-cache
+            docker-compose up -d
+            
+            # Cleanup
+            echo "Cleaning up..."
+            docker system prune -f
+            
+            echo "=== Deployment complete ==="
