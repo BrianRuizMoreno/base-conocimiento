@@ -2,7 +2,7 @@
 set -e
 
 echo "==============================================="
-echo "  RAG System - Deploy (Traefik Edition)"
+echo "  RAG System - Deploy (Docker Swarm Stack)"
 echo "  VPS: 72.60.12.96"
 echo "  URL: https://conocimiento.automatizaciones-physis.cloud"
 echo "==============================================="
@@ -38,28 +38,22 @@ if [ ! -f ".env" ]; then
     log_warn "  cd $PROJECT_DIR"
     log_warn "  cp .env.example .env"
     log_warn "  nano .env"
-    log_warn ""
-    log_warn "Variables requeridas:"
-    log_warn "  - DATABASE_URL (tu PostgreSQL)"
-    log_warn "  - ADMIN_PIN_HASH (genera con: python3 -c \"import bcrypt; print(bcrypt.hashpw(b'TU_PIN', bcrypt.gensalt()).decode())\")"
-    log_warn "  - SECRET_KEY (string aleatorio 32+ chars)"
-    log_warn "  - GEMINI_API_KEY (opcional)"
     exit 1
 fi
 
-# 3. Build and deploy
-log_info "3/5 - Construyendo contenedores..."
-docker-compose -f docker-compose-traefik.yml down 2>/dev/null || true
-docker-compose -f docker-compose-traefik.yml build --no-cache
+# 3. Build images
+log_info "3/5 - Construyendo imagenes..."
+docker-compose build
 
-log_info "4/5 - Iniciando servicios..."
-docker-compose -f docker-compose-traefik.yml up -d
+# 4. Deploy stack
+log_info "4/5 - Deployando stack..."
+docker stack deploy -c docker-stack.yml rag-system
 
-# 4. Cleanup
+# 5. Cleanup
 log_info "5/5 - Limpiando..."
 docker system prune -f
 
-# 5. Verify
+# 6. Verify
 echo ""
 log_info "==============================================="
 log_info "DEPLOY COMPLETADO!"
@@ -71,7 +65,7 @@ echo "  API:      https://conocimiento.automatizaciones-physis.cloud/api/v1"
 echo "  Health:   https://conocimiento.automatizaciones-physis.cloud/api/v1/health"
 echo ""
 echo "Comandos utiles:"
-echo "  Logs backend:  docker logs -f rag-backend"
-echo "  Logs frontend: docker logs -f rag-frontend"
-echo "  Estado:        docker ps | grep rag"
+echo "  docker stack ps rag-system"
+echo "  docker service logs rag-system_rag-backend"
+echo "  docker service logs rag-system_rag-frontend"
 echo ""

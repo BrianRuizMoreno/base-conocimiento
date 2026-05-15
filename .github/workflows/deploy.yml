@@ -30,11 +30,12 @@ jobs:
               exit 1
             fi
             
-            # Deploy
-            echo "Deploying..."
-            docker-compose -f docker-compose-traefik.yml down 2>/dev/null || true
-            docker-compose -f docker-compose-traefik.yml build --no-cache
-            docker-compose -f docker-compose-traefik.yml up -d
+            # Build and deploy
+            echo "Building images..."
+            docker-compose build
+            
+            echo "Deploying stack..."
+            docker stack deploy -c docker-stack.yml rag-system
             
             # Cleanup
             docker system prune -f
