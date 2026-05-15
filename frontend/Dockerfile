@@ -1,16 +1,13 @@
-# Build stage with pnpm
+# Build stage
 FROM node:22-slim AS builder
-
-# Install pnpm
-RUN npm install -g pnpm
 
 WORKDIR /app
 
 COPY package.json ./
-RUN pnpm install
+RUN npm install
 
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
 # Serve stage with nginx
 FROM nginx:alpine
