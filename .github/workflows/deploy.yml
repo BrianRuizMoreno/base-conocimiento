@@ -17,26 +17,27 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             echo "=== Starting deployment ==="
+            cd /opt/base-conocimiento
             
-            # Go to project directory
-            cd /opt/base-conocimiento || exit 1
-            
-            # Pull latest changes
+            # Pull latest
             echo "Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
             
-            # Stop existing containers
-            echo "Stopping containers..."
-            docker-compose down
+            # Check .env exists
+            if [ ! -f ".env" ]; then
+              echo "ERROR: .env not found. Run setup first."
+              exit 1
+            fi
             
-            # Build and start
-            echo "Building and starting..."
-            docker-compose build --no-cache
-            docker-compose up -d
+            # Deploy
+            echo "Deploying..."
+            docker-compose -f docker-compose-traefik.yml down 2>/dev/null || true
+            docker-compose -f docker-compose-traefik.yml build --no-cache
+            docker-compose -f docker-compose-traefik.yml up -d
             
             # Cleanup
-            echo "Cleaning up..."
             docker system prune -f
             
             echo "=== Deployment complete ==="
+            echo "URL: https://conocimiento.automatizaciones-physis.cloud"
