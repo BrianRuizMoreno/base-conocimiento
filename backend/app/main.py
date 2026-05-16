@@ -4,15 +4,16 @@ Main entry point with lifespan events and middleware.
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
+import subprocess
 
 from app.api import auth, collections, documents, chat, analysis, settings, integration, admin
 from app.core.config import settings as app_settings
 from app.db.database import engine
-from app.db.models import Base
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,11 +27,31 @@ async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
     logger.info("Starting RAG System...")
-    async with engine.begin() as conn:
-        # Create tables if they don't exist (dev only)
-        # In production, use alembic migrations
-        pass
+    try:
+        # Run migrations
+        logger.info("Running database migrations...")
+        subprocess.run(
+            ["alembic", "upgrade", "head"],
+            cwd="/app",
+            check=True,
+            capture_output=True
+        )
+        logger.info("Migrations completed.")
+        
+        # Run seed
+        logger.info("Running database seed...")
+        subprocess.run(
+            ["python", "-m", "app.db.seed"],
+            cwd="/app",
+            check=True,
+            capture_output=True
+        )
+        logger.info("Seed completed.")
+    except Exception as e:
+        logger.warning(f"Migration/seed error (may already exist): {e}")
+    
     yield
+    
     # Shutdown
     logger.info("Shutting down RAG System...")
     await engine.dispose()
@@ -76,9 +97,28 @@ app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 
 @app.get("/api/v1/health")
 async def health_check():
-    return {"status": "ok", "version": "1.0.0"}
+    """Health check endpoint."""
+    try:
+        # Check database connection
+        from app.db.database import SessionLocal
+        async with SessionLocal() as session:
+            from sqlalchemy import text
+            await session.execute(text("SELECT 1"))
+        
+        return {
+            "status": "ok",
+            "version": "1.0.0",
+            "database": "connected",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "database": "disconnected",
+            "error": str(e)
+        }
 
 
 @app.get("/")
 async def root():
-    return {"message": "RAG System API", "docs": "/docs"}
+    return {"message": "RAG System API", "docs": "/docs", "version": "1.0.0"}
