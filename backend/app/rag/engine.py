@@ -9,6 +9,7 @@ from app.db.models import Chunk
 from app.ingestion.embeddings import get_embedding
 from app.core.providers import ProviderFactory
 from app.core.config import settings
+from app.core.webhooks import notify_chat_low_confidence
 from app.search.web_search import search_web, format_web_results
 from app.graph.search import hybrid_search
 
@@ -181,10 +182,17 @@ async def chat_with_collection(
         logger.info("Web search enabled, querying Tavily...")
         web_search_results = await search_web(question, max_results=5)
 
-    # 4. If no chunks and no web results, return early
+    # 4. If no chunks and no web results, return early + notify webhook
     if not chunks and not web_search_results:
+        answer = "No encontre informacion relevante en los documentos de esta coleccion ni en internet para responder tu pregunta."
+        await notify_chat_low_confidence(
+            collection_id=str(collection_id),
+            question=question,
+            response=answer,
+            reason="No se encontraron chunks relevantes ni resultados de busqueda web",
+        )
         return {
-            "answer": "No encontre informacion relevante en los documentos de esta coleccion ni en internet para responder tu pregunta.",
+            "answer": answer,
             "sources": [],
             "model": model,
             "tokens_used": 0

@@ -13,6 +13,7 @@ from app.ingestion.chunker import chunk_text
 from app.ingestion.embeddings import get_embeddings
 from app.graph.extractor import extract_entities_from_chunk
 from app.core.config import settings
+from app.core.webhooks import notify_document_indexed, notify_document_error
 
 logger = logging.getLogger(__name__)
 
@@ -136,13 +137,36 @@ async def process_document(document_id: str, file_path: str, file_type: str, col
             await db.commit()
             logger.info(f"Document {document_id} processed successfully with {len(all_chunks_data)} chunks and {len(all_images)} images")
             
+            # Notify n8n webhook
+            await notify_document_indexed(
+                document_id=document_id,
+                collection_id=collection_id,
+                filename=doc.filename,
+                status="completed",
+                metadata={
+                    "total_chunks": len(all_chunks_data),
+                    "total_chars": total_text_length,
+                    "images_extracted": len(all_images),
+                    "parts_processed": len(parts),
+                },
+            )
+            
         except Exception as e:
             logger.error(f"Error processing document {document_id}: {e}", exc_info=True)
+            error_msg = str(e)
             try:
                 doc = await db.get(Document, UUID(document_id))
                 if doc:
                     doc.status = "error"
-                    doc.metadata_ = {"error": str(e)}
+                    doc.metadata_ = {"error": error_msg}
                     await db.commit()
+                    
+                    # Notify n8n webhook
+                    await notify_document_error(
+                        document_id=document_id,
+                        collection_id=collection_id,
+                        filename=doc.filename,
+                        error=error_msg,
+                    )
             except Exception as inner:
                 logger.error(f"Failed to update error status: {inner}")

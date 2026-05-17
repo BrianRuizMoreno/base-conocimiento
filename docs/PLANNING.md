@@ -181,9 +181,9 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 | 6.8 | Webhooks a n8n | Notificar `document_indexed`, `document_error`, `chat_low_confidence` → POST al `N8N_WEBHOOK_URL` |
 
 ### Criterios de Aceptación
-- [ ] Workflow de n8n chatea contra una colección con `X-API-Key` → respuesta real del RAG
-- [ ] Al indexar un documento → n8n recibe webhook `document_indexed` con metadata
-- [ ] Generar campaña devuelve headline, body, CTA y segmentación basados en datos reales
+- [x] Workflow de n8n chatea contra una colección con `X-API-Key` → respuesta real del RAG
+- [x] Al indexar un documento → n8n recibe webhook `document_indexed` con metadata
+- [x] Generar campaña devuelve headline, body, CTA y segmentación basados en datos reales
 
 ---
 
