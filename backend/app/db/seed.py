@@ -1,10 +1,9 @@
 """Seed data for initial setup."""
 
 import asyncio
-import bcrypt
 from sqlalchemy import select
 from app.db.database import SessionLocal
-from app.db.models import User, Pricing
+from app.db.models import User, Pricing, ChatSettings
 from app.core.config import settings
 
 
@@ -17,7 +16,7 @@ async def seed_database():
         )
         admin = result.scalar_one_or_none()
         
-        if not admin:
+        if not admin and settings.ADMIN_PIN_HASH and settings.ADMIN_PIN_HASH != "$2b$12$...":
             print("Creating admin user...")
             # Create admin user from env PIN hash
             admin = User(
@@ -43,7 +42,23 @@ async def seed_database():
                 Pricing(provider="anthropic", model="claude-3.5-sonnet", input_price_per_1m=3.0, output_price_per_1m=15.0),
             ]
             session.add_all(pricing_data)
-        
+
+        # Create default chat settings
+        result = await session.execute(
+            select(ChatSettings).where(ChatSettings.user_id.is_(None))
+        )
+        if not result.scalar_one_or_none():
+            print("Creating default chat settings...")
+            default_settings = ChatSettings(
+                user_id=None,
+                provider="gemini",
+                model="gemini-2.0-flash",
+                temperature=0.2,
+                top_p=0.6,
+                max_tokens=2048,
+            )
+            session.add(default_settings)
+
         await session.commit()
         print("Seed completed!")
 

@@ -58,6 +58,15 @@ async def require_auth(x_auth_pin: str = Header(..., alias="X-Auth-PIN"), db: As
         return admin
     
     if settings.ADMIN_PIN_HASH and verify_pin(x_auth_pin, settings.ADMIN_PIN_HASH):
-        return admin
+        if admin:
+            return admin
+        # If env PIN matches but no DB user exists, return a minimal user object
+        return User(
+            id="00000000-0000-0000-0000-000000000000",
+            username="admin",
+            pin_hash=settings.ADMIN_PIN_HASH,
+            role="admin",
+            is_active=True
+        )
     
     raise HTTPException(status_code=401, detail="PIN invalido")

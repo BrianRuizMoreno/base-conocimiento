@@ -10,10 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import subprocess
+import os
 
-from app.api import auth, collections, documents, chat, analysis, settings, integration, admin
+from app.api import auth, collections, documents, chat, analysis, settings, integration, admin, conversations, graph
 from app.core.config import settings as app_settings
 from app.db.database import engine
+
+# Dynamic project root for migrations
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,7 +36,7 @@ async def lifespan(app: FastAPI):
         logger.info("Running database migrations...")
         subprocess.run(
             ["alembic", "upgrade", "head"],
-            cwd="/app",
+            cwd=PROJECT_ROOT,
             check=True,
             capture_output=True
         )
@@ -42,7 +46,7 @@ async def lifespan(app: FastAPI):
         logger.info("Running database seed...")
         subprocess.run(
             ["python", "-m", "app.db.seed"],
-            cwd="/app",
+            cwd=PROJECT_ROOT,
             check=True,
             capture_output=True
         )
@@ -69,7 +73,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=app_settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -93,6 +97,8 @@ app.include_router(analysis.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["Settings"])
 app.include_router(integration.router, prefix="/api/v1/integration", tags=["Integration"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
+app.include_router(conversations.router, prefix="/api/v1", tags=["Conversations"])
+app.include_router(graph.router, prefix="/api/v1/collections", tags=["Graph"])
 
 
 @app.get("/api/v1/health")
@@ -112,11 +118,14 @@ async def health_check():
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        return {
-            "status": "error",
-            "database": "disconnected",
-            "error": str(e)
-        }
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "database": "disconnected",
+                "error": str(e)
+            }
+        )
 
 
 @app.get("/")

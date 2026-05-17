@@ -161,7 +161,7 @@ class ServerMetrics(Base):
 
 class Pricing(Base):
     __tablename__ = "pricing"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     provider = Column(String(20))
     model = Column(String(50))
@@ -169,3 +169,56 @@ class Pricing(Base):
     output_price_per_1m = Column(Float)
     currency = Column(String(3), default="USD")
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProviderKey(Base):
+    __tablename__ = "provider_keys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider = Column(String(20), nullable=False, index=True)
+    api_key_encrypted = Column(Text, nullable=False)
+    api_key_hash = Column(String(64), nullable=False)
+    label = Column(String(100))
+    is_active = Column(Boolean, default=True)
+    priority = Column(Integer, default=0)
+    last_used_at = Column(DateTime)
+    failure_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ChatSettings(Base):
+    __tablename__ = "chat_settings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    provider = Column(String(20), default="gemini")
+    model = Column(String(50), default="gemini-2.0-flash")
+    temperature = Column(Float, default=0.2)
+    top_p = Column(Float, default=0.6)
+    max_tokens = Column(Integer, default=2048)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    collection_id = Column(UUID(as_uuid=True), ForeignKey("collections.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String(20), nullable=False)
+    content = Column(Text, nullable=False)
+    sources = Column(JSONB)
+    related_media = Column(JSONB)
+    model = Column(String(50))
+    tokens_used = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)

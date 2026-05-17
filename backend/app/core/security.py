@@ -33,10 +33,16 @@ def hash_api_key(key: str) -> str:
 
 def get_encryption_key() -> bytes:
     """Get or generate Fernet encryption key from SECRET_KEY."""
-    secret = os.getenv("SECRET_KEY", "default-secret-key")
-    # Derive 32-byte key from secret
+    import base64
+    secret = os.getenv("SECRET_KEY")
+    if not secret or secret == "default-secret-key":
+        raise RuntimeError(
+            "SECRET_KEY no esta configurada. "
+            "Establece una clave segura de al menos 32 caracteres en el archivo .env"
+        )
+    # Derive 32-byte key from secret and encode as base64-urlsafe (Fernet requirement)
     key = hashlib.sha256(secret.encode()).digest()
-    return key[:32] + b"=" * (32 - len(key[:32]) % 32)[:32]
+    return base64.urlsafe_b64encode(key)
 
 
 def encrypt_value(value: str) -> str:

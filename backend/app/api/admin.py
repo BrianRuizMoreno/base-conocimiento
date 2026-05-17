@@ -1,5 +1,6 @@
 """Admin router."""
 
+import asyncio
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -198,8 +199,8 @@ async def get_server_status(
     ram_used_gb = ram.used / (1024**3)
     ram_total_gb = ram.total / (1024**3)
     
-    # CPU
-    cpu_percent = psutil.cpu_percent(interval=1)
+    # CPU (run in thread to avoid blocking event loop)
+    cpu_percent = await asyncio.to_thread(psutil.cpu_percent, interval=1)
     
     # DB counts
     files_count = await db.execute(select(func.count(Document.id)))
