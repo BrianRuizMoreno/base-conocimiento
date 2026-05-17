@@ -40,9 +40,9 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 | 1.9 | Configuración de chat | Selector de modelo, temperatura (0-2), top_p (0-1) desde el panel y desde el chat |
 
 ### Criterios de Aceptación
-- [ ] Se configuran 3 API keys de Gemini y el sistema hace fallback si una falla
-- [ ] Cambiar modelo/temperatura/top_p desde el panel → se refleja instantáneamente en el chat
-- [ ] `TokenUsage` registra cada request al LLM con tokens y costo
+- [x] Se configuran 3 API keys de Gemini y el sistema hace fallback si una falla
+- [x] Cambiar modelo/temperatura/top_p desde el panel → se refleja instantáneamente en el chat
+- [x] `TokenUsage` registra cada request al LLM con tokens y costo
 
 ---
 
@@ -69,10 +69,10 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 | 2.10 | Galería de imágenes | Vista de imágenes extraídas por colección |
 
 ### Criterios de Aceptación
-- [ ] Subir un `.jpg` con texto → se indexa y se puede preguntar por ese texto
-- [ ] Subir un PDF con imágenes → las imágenes se extraen, almacenan y sirven vía API
-- [ ] Subir un `.mp3` → se transcribe y el texto es consultable
-- [ ] Archivo de 50MB se particiona automáticamente en chunks sin timeout
+- [x] Subir un `.jpg` con texto → se indexa y se puede preguntar por ese texto
+- [x] Subir un PDF con imágenes → las imágenes se extraen, almacenan y sirven vía API
+- [x] Subir un `.mp3` → se transcribe y el texto es consultable
+- [x] Archivo de 50MB se particiona automáticamente en chunks sin timeout
 
 ---
 
@@ -102,11 +102,11 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 | 3.13 | Gestión de fuentes | Botón "Eliminar" y "Re-indexar" en cada documento de la colección |
 
 ### Criterios de Aceptación
-- [ ] 3 conversaciones abiertas, cada una mantiene su historial independiente
-- [ ] Web search activado → respuestas citan fuentes externas (Tavily)
-- [ ] "Muéstrame la imagen del brochure" → devuelve imagen embebida en el chat
-- [ ] Eliminar un documento → sus chunks e imágenes desaparecen; el chat ya no lo referencia
-- [ ] Re-indexar un documento actualizado → nuevos chunks reemplazan los viejos
+- [x] 3 conversaciones abiertas, cada una mantiene su historial independiente
+- [x] Web search activado → respuestas citan fuentes externas (Tavily)
+- [x] "Muéstrame la imagen del brochure" → devuelve imagen embebida en el chat
+- [x] Eliminar un documento → sus chunks e imágenes desaparecen; el chat ya no lo referencia
+- [x] Re-indexar un documento actualizado → nuevos chunks reemplazan los viejos
 
 ---
 
@@ -132,9 +132,9 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 | 4.9 | Grafo en panel admin | Vista consolidada en el admin mostrando el grafo global |
 
 ### Criterios de Aceptación
-- [ ] Indexar un documento con empresas, productos → entidades extraídas automáticamente
-- [ ] Grafo interactivo renderizado correctamente (nodos coloreados por tipo)
-- [ ] "¿Quién compite con X?" → usa búsqueda híbrida vector + grafo, respuesta más precisa
+- [x] Indexar un documento con empresas, productos → entidades extraídas automáticamente
+- [x] Grafo interactivo renderizado correctamente (nodos coloreados por tipo)
+- [x] "¿Quién compite con X?" → usa búsqueda híbrida vector + grafo, respuesta más precisa
 
 ---
 
