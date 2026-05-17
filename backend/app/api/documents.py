@@ -15,7 +15,7 @@ import asyncio
 
 from app.db.database import get_db
 from app.db.models import Document, Chunk
-from app.api.auth import require_auth
+from app.api.auth import require_auth, verify_collection_access
 from app.core.config import settings
 from app.ingestion.pipeline import process_document
 
@@ -212,6 +212,8 @@ async def list_documents(
     current_user = Depends(require_auth)
 ):
     """List documents in a collection."""
+    await verify_collection_access(db, collection_id, current_user)
+    
     result = await db.execute(
         select(Document).where(Document.collection_id == collection_id)
     )
@@ -243,6 +245,8 @@ async def delete_document(
     
     if not document:
         return ApiResponse(success=False, error="Documento no encontrado")
+    
+    await verify_collection_access(db, document.collection_id, current_user)
     
     # Delete extracted images
     images_dir = os.path.join(settings.UPLOAD_DIR, "images", str(document.collection_id), str(document_id))
@@ -282,6 +286,8 @@ async def document_progress(
     if not document:
         return ApiResponse(success=False, error="Documento no encontrado")
     
+    await verify_collection_access(db, document.collection_id, current_user)
+    
     return ApiResponse(
         success=True,
         data={
@@ -307,6 +313,8 @@ async def reindex_document(
     if not document:
         return ApiResponse(success=False, error="Documento no encontrado")
     
+    await verify_collection_access(db, document.collection_id, current_user)
+    
     # Delete old chunks
     await db.execute(delete(Chunk).where(Chunk.document_id == document_id))
     
@@ -315,9 +323,9 @@ async def reindex_document(
     document.metadata_ = {}
     await db.commit()
     
-    # Trigger re-processing
+    # Trigger re-processing (use sync wrapper for async process_document)
     background_tasks.add_task(
-        process_document,
+        run_async_process,
         str(document.id),
         document.storage_path,
         document.file_type,

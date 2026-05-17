@@ -9,7 +9,7 @@ from uuid import UUID
 
 from app.db.database import get_db
 from app.db.models import Collection
-from app.api.auth import require_auth
+from app.api.auth import require_auth, verify_collection_access
 
 router = APIRouter()
 
@@ -77,11 +77,7 @@ async def get_collection(
     current_user = Depends(require_auth)
 ):
     """Get a specific collection."""
-    result = await db.execute(select(Collection).where(Collection.id == collection_id))
-    collection = result.scalar_one_or_none()
-    
-    if not collection:
-        return ApiResponse(success=False, error="Collection not found")
+    collection = await verify_collection_access(db, collection_id, current_user)
     
     return ApiResponse(
         success=True,
@@ -101,11 +97,7 @@ async def delete_collection(
     current_user = Depends(require_auth)
 ):
     """Delete a collection."""
-    result = await db.execute(select(Collection).where(Collection.id == collection_id))
-    collection = result.scalar_one_or_none()
-    
-    if not collection:
-        return ApiResponse(success=False, error="Collection not found")
+    await verify_collection_access(db, collection_id, current_user)
     
     await db.execute(delete(Collection).where(Collection.id == collection_id))
     await db.commit()

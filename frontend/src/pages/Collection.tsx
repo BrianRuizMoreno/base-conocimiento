@@ -211,14 +211,14 @@ export default function Collection() {
                 )}
               </div>
               {uploadError && (
-                <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                  <AlertCircle className="h-4 w-4" />
+                <div role="alert" aria-live="polite" className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                  <AlertCircle className="h-4 w-4" aria-hidden="true" />
                   {uploadError}
                 </div>
               )}
               {uploadSuccess && (
-                <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
-                  <CheckCircle2 className="h-4 w-4" />
+                <div role="status" aria-live="polite" className="mt-3 flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                   {uploadSuccess}
                 </div>
               )}
@@ -270,9 +270,10 @@ export default function Collection() {
                         </div>
                         <button
                           onClick={() => deleteDocument(doc.id)}
+                          aria-label={`Eliminar documento ${doc.filename}`}
                           className="rounded-lg p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                     )

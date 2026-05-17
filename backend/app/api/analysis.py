@@ -9,7 +9,7 @@ from uuid import UUID
 
 from app.db.database import get_db
 from app.db.models import Collection
-from app.api.auth import require_auth
+from app.api.auth import require_auth, verify_collection_access
 from app.core.limiter import limiter
 from app.search.web_search import search_web, format_web_results
 from app.services.analysis_service import (
@@ -48,13 +48,7 @@ async def get_summary(
 ):
     """Generate an automatic summary of a collection using LLM."""
     try:
-        coll_result = await db.execute(
-            select(Collection).where(Collection.id == collection_id)
-        )
-        collection = coll_result.scalar_one_or_none()
-        if not collection:
-            return ApiResponse(success=False, error="Coleccion no encontrada")
-
+        await verify_collection_access(db, collection_id, current_user)
         data = await generate_collection_summary(db, collection_id)
         return ApiResponse(success=True, data=data)
     except Exception as e:
@@ -76,13 +70,7 @@ async def get_analysis(
 ):
     """Generate predictive analysis with metrics, trends and predictions."""
     try:
-        coll_result = await db.execute(
-            select(Collection).where(Collection.id == collection_id)
-        )
-        collection = coll_result.scalar_one_or_none()
-        if not collection:
-            return ApiResponse(success=False, error="Coleccion no encontrada")
-
+        await verify_collection_access(db, collection_id, current_user)
         data = await generate_collection_analysis(db, collection_id)
         return ApiResponse(success=True, data=data)
     except Exception as e:
@@ -105,13 +93,8 @@ async def market_compare(
 ):
     """Compare internal collection data against external web sources via Tavily."""
     try:
-        coll_result = await db.execute(
-            select(Collection).where(Collection.id == collection_id)
-        )
-        collection = coll_result.scalar_one_or_none()
-        if not collection:
-            return ApiResponse(success=False, error="Coleccion no encontrada")
-
+        await verify_collection_access(db, collection_id, current_user)
+        
         # Get internal chunks
         chunks = await get_collection_chunks(db, collection_id, max_chars=60_000)
         internal_context = "\n\n---\n\n".join([c.content for c in chunks]) if chunks else ""

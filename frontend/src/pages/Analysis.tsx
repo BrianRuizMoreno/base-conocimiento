@@ -189,12 +189,15 @@ export default function Analysis() {
 
       <main className="mx-auto max-w-7xl p-4 md:p-6">
         {/* Tabs */}
-        <div className="mb-6 flex flex-wrap gap-1 border-b border-border">
+        <div className="mb-6 flex flex-wrap gap-1 border-b border-border" role="tablist" aria-label="Secciones de analisis">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={`panel-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === tab.id
@@ -202,7 +205,7 @@ export default function Analysis() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 {tab.label}
               </button>
             )
@@ -210,8 +213,8 @@ export default function Analysis() {
         </div>
 
         {error && (
-          <div className="mb-6 flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            <AlertCircle className="h-4 w-4" />
+          <div role="alert" aria-live="polite" className="mb-6 flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" aria-hidden="true" />
             {error}
           </div>
         )}
@@ -224,7 +227,7 @@ export default function Analysis() {
           <div className="space-y-6">
             {/* ==================== RESUMEN ==================== */}
             {activeTab === 'summary' && summaryData && (
-              <div className="space-y-6">
+              <div role="tabpanel" id="panel-summary" aria-label="Resumen" className="space-y-6">
                 {/* Stats */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="rounded-lg border border-border bg-card p-4">
@@ -293,7 +296,7 @@ export default function Analysis() {
 
             {/* ==================== ANALISIS PREDICTIVO ==================== */}
             {activeTab === 'analysis' && analysisData && (
-              <div className="space-y-6">
+              <div role="tabpanel" id="panel-analysis" aria-label="Analisis Predictivo" className="space-y-6">
                 {/* Metrics cards */}
                 {analysisData.metrics && Object.keys(analysisData.metrics).length > 0 && (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -383,14 +386,15 @@ export default function Analysis() {
 
             {/* ==================== COMPARATIVA DE MERCADO ==================== */}
             {activeTab === 'market' && (
-              <div className="space-y-6">
+              <div role="tabpanel" id="panel-market" aria-label="Comparativa de Mercado" className="space-y-6">
                 {/* Input form */}
                 <div className="rounded-xl border border-border bg-card p-6">
                   <h2 className="mb-4 text-lg font-semibold text-foreground">Comparativa de Mercado</h2>
                   <div className="space-y-4">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-foreground">Tema o producto a comparar</label>
+                      <label htmlFor="market-topic" className="mb-1 block text-sm font-medium text-foreground">Tema o producto a comparar</label>
                       <input
+                        id="market-topic"
                         type="text"
                         value={marketTopic}
                         onChange={(e) => setMarketTopic(e.target.value)}
@@ -399,8 +403,9 @@ export default function Analysis() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-foreground">Dimensiones (opcional, separadas por coma)</label>
+                      <label htmlFor="market-dimensions" className="mb-1 block text-sm font-medium text-foreground">Dimensiones (opcional, separadas por coma)</label>
                       <input
+                        id="market-dimensions"
                         type="text"
                         value={marketDimensions}
                         onChange={(e) => setMarketDimensions(e.target.value)}

@@ -1,14 +1,16 @@
-"""Auth router."""
+"""Auth router with rate limiting and collection access control."""
 
-from fastapi import APIRouter, HTTPException, Header, Depends
+from fastapi import APIRouter, HTTPException, Header, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from uuid import UUID
 
 from app.db.database import get_db
 from app.core.security import verify_pin
 from app.core.config import settings
-from app.db.models import User
+from app.core.limiter import limiter
+from app.db.models import User, Collection
 
 router = APIRouter()
 
@@ -24,23 +26,25 @@ class AuthResponse(BaseModel):
 
 
 @router.post("/verify", response_model=AuthResponse)
+@limiter.limit("10/minute")
 async def verify_auth(
-    request: AuthRequest,
+    request: Request,
+    body: AuthRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """Verify admin PIN."""
+    """Verify admin PIN with rate limiting."""
     # First check if admin user exists in DB
     result = await db.execute(select(User).where(User.username == "admin"))
     admin = result.scalar_one_or_none()
     
-    if admin and verify_pin(request.pin, admin.pin_hash):
+    if admin and verify_pin(body.pin, admin.pin_hash):
         return AuthResponse(
             success=True,
             data={"role": admin.role, "username": admin.username}
         )
     
     # Fallback to env PIN hash
-    if settings.ADMIN_PIN_HASH and verify_pin(request.pin, settings.ADMIN_PIN_HASH):
+    if settings.ADMIN_PIN_HASH and verify_pin(body.pin, settings.ADMIN_PIN_HASH):
         return AuthResponse(
             success=True,
             data={"role": "admin", "username": "admin"}
@@ -70,3 +74,33 @@ async def require_auth(x_auth_pin: str = Header(..., alias="X-Auth-PIN"), db: As
         )
     
     raise HTTPException(status_code=401, detail="PIN invalido")
+
+
+async def verify_collection_access(
+    db: AsyncSession,
+    collection_id: UUID,
+    current_user: User,
+) -> Collection:
+    """Verify that the authenticated user has access to the collection.
+    
+    Currently allows admin access to all collections.
+    In Phase 7 (sectors), this will check sector-based permissions.
+    """
+    result = await db.execute(
+        select(Collection).where(Collection.id == collection_id)
+    )
+    collection = result.scalar_one_or_none()
+    
+    if not collection:
+        raise HTTPException(status_code=404, detail="Coleccion no encontrada")
+    
+    # Admin has access to everything
+    if current_user.role == "admin":
+        return collection
+    
+    # Future: check sector-based access here
+    # For now, deny non-admin access to other users' collections
+    if collection.owner_id and str(collection.owner_id) != str(current_user.id):
+        raise HTTPException(status_code=403, detail="No tienes acceso a esta coleccion")
+    
+    return collection

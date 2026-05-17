@@ -303,9 +303,10 @@ export default function Chat() {
             </button>
             <button
               onClick={() => setSidebarOpen(false)}
+              aria-label="Cerrar sidebar"
               className="ml-auto rounded-lg p-2 text-muted-foreground hover:bg-accent md:hidden"
             >
-              <PanelLeftClose className="h-4 w-4" />
+              <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -353,9 +354,10 @@ export default function Chat() {
                         e.stopPropagation()
                         setActiveMenuId(activeMenuId === conv.id ? null : conv.id)
                       }}
+                      aria-label={`Opciones de ${conv.title || 'conversacion'}`}
                       className="rounded p-1 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
                     >
-                      <MoreVertical className="h-3.5 w-3.5" />
+                      <MoreVertical className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
 
                     {/* Action menu */}
@@ -404,15 +406,17 @@ export default function Chat() {
           <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
             <button
               onClick={() => setSidebarOpen(true)}
+              aria-label="Abrir sidebar"
               className="rounded-lg border border-border p-2 text-foreground hover:bg-accent md:hidden"
             >
-              <PanelLeft className="h-4 w-4" />
+              <PanelLeft className="h-4 w-4" aria-hidden="true" />
             </button>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Alternar sidebar"
               className="hidden rounded-lg border border-border p-2 text-foreground hover:bg-accent md:block"
             >
-              <PanelLeft className="h-4 w-4" />
+              <PanelLeft className="h-4 w-4" aria-hidden="true" />
             </button>
             <h1 className="flex-1 text-lg font-bold text-foreground">
               {selectedConversationId
@@ -437,9 +441,10 @@ export default function Chat() {
               </button>
               <button
                 onClick={() => setShowSettings(!showSettings)}
+                aria-label="Configuracion del chat"
                 className="rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-accent"
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -577,8 +582,8 @@ export default function Chat() {
             )}
 
             {error && (
-              <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                <AlertCircle className="h-4 w-4" />
+              <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                <AlertCircle className="h-4 w-4" aria-hidden="true" />
                 {error}
               </div>
             )}
@@ -601,9 +606,10 @@ export default function Chat() {
             <button
               onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
+              aria-label={loading ? 'Enviando mensaje' : 'Enviar mensaje'}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
             </button>
           </div>
         </div>
@@ -619,9 +625,9 @@ export default function Chat() {
 
       {/* Rename modal */}
       {renameModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="rename-title">
           <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-lg">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Renombrar conversacion</h3>
+            <h3 id="rename-title" className="mb-4 text-lg font-semibold text-foreground">Renombrar conversacion</h3>
             <input
               type="text"
               value={renameTitle}

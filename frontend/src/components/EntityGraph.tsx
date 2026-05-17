@@ -191,22 +191,25 @@ export default function EntityGraph({ collectionId, height = '600px' }: EntityGr
             onClick={handleZoomIn}
             className="rounded-lg border border-border bg-card p-2 text-foreground hover:bg-accent"
             title="Acercar"
+            aria-label="Acercar grafo"
           >
-            <ZoomIn className="h-4 w-4" />
+            <ZoomIn className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
             onClick={handleZoomOut}
             className="rounded-lg border border-border bg-card p-2 text-foreground hover:bg-accent"
             title="Alejar"
+            aria-label="Alejar grafo"
           >
-            <ZoomOut className="h-4 w-4" />
+            <ZoomOut className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
             onClick={handleFit}
             className="rounded-lg border border-border bg-card p-2 text-foreground hover:bg-accent"
             title="Ajustar"
+            aria-label="Ajustar vista del grafo"
           >
-            <Maximize className="h-4 w-4" />
+            <Maximize className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

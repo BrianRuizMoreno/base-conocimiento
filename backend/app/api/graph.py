@@ -10,7 +10,7 @@ from typing import List
 
 from app.db.database import get_db
 from app.db.models import Entity, Relationship, Chunk, Document
-from app.api.auth import require_auth
+from app.api.auth import require_auth, verify_collection_access
 from app.graph.extractor import extract_entities_from_chunk
 
 router = APIRouter()
@@ -85,6 +85,8 @@ async def get_collection_graph(
 ):
     """Return graph in Cytoscape format for a collection."""
     try:
+        await verify_collection_access(db, collection_id, current_user)
+        
         # Get entities
         entity_result = await db.execute(
             select(Entity).where(Entity.collection_id == collection_id)
@@ -117,6 +119,8 @@ async def regenerate_graph(
 ):
     """Re-process entity extraction for all chunks in a collection."""
     try:
+        await verify_collection_access(db, collection_id, current_user)
+        
         # Delete existing entities and relationships for this collection
         await db.execute(
             delete(Relationship).where(
@@ -188,6 +192,8 @@ async def list_entities(
 ):
     """List all entities for a collection."""
     try:
+        await verify_collection_access(db, collection_id, current_user)
+        
         result = await db.execute(
             select(Entity).where(Entity.collection_id == collection_id)
         )

@@ -9,7 +9,7 @@ from uuid import UUID
 
 from app.db.database import get_db
 from app.db.models import Conversation, Message
-from app.api.auth import require_auth
+from app.api.auth import require_auth, verify_collection_access
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -61,6 +61,8 @@ async def create_conversation(
 ):
     """Create a new conversation for a collection."""
     try:
+        await verify_collection_access(db, request.collection_id, current_user)
+        
         conversation = Conversation(
             collection_id=request.collection_id,
             title=request.title,
@@ -92,6 +94,9 @@ async def list_conversations(
 ):
     """List conversations, optionally filtered by collection_id."""
     try:
+        if collection_id:
+            await verify_collection_access(db, collection_id, current_user)
+        
         stmt = select(Conversation).order_by(desc(Conversation.updated_at))
         if collection_id:
             stmt = stmt.where(Conversation.collection_id == collection_id)
@@ -132,6 +137,8 @@ async def get_conversation(
 
         if not conversation:
             return ApiResponse(success=False, error="Conversacion no encontrada")
+
+        await verify_collection_access(db, conversation.collection_id, current_user)
 
         messages_result = await db.execute(
             select(Message)

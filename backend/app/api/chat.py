@@ -9,7 +9,7 @@ from uuid import UUID
 
 from app.db.database import get_db
 from app.db.models import ChatSettings, ProviderKey, Conversation, Message
-from app.api.auth import require_auth
+from app.api.auth import require_auth, verify_collection_access
 from app.rag.engine import chat_with_collection
 from app.core.providers import ProviderFactory
 from app.core.limiter import limiter
@@ -107,6 +107,9 @@ async def chat(
 ):
     """Chat with a collection using RAG with DB-persisted settings and optional conversation history."""
     try:
+        # Verify collection access
+        await verify_collection_access(db, collection_id, current_user)
+        
         # Load global chat settings from DB
         chat_settings = await _get_global_chat_settings(db)
 

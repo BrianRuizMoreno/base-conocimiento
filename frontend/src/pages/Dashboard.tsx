@@ -91,14 +91,20 @@ export default function Dashboard() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
+              <label htmlFor="pin-input" className="sr-only">PIN de acceso</label>
               <input
+                id="pin-input"
                 type="password"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="Ingresa tu PIN"
+                aria-describedby="pin-error"
                 className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500"
                 maxLength={10}
               />
+            </div>
+            <div id="pin-error" aria-live="polite" className="sr-only">
+              {error}
             </div>
 
             {error && (
@@ -117,7 +123,7 @@ export default function Dashboard() {
           </form>
 
           <div className="text-center text-xs text-muted-foreground">
-            <p>V 1.0.0 - Fase 2</p>
+            <p>V 1.0.0 - Fase 6</p>
           </div>
         </div>
       </div>
