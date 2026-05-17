@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { client } from '../lib/client'
 import {
@@ -137,12 +138,12 @@ export default function Dashboard() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
           <h1 className="text-xl font-bold text-foreground">RAG System</h1>
           <div className="flex items-center gap-4">
-            <a
-              href="/admin"
+            <Link
+              to="/admin"
               className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
             >
               Admin
-            </a>
+            </Link>
             <button
               onClick={logout}
               className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-accent"
@@ -157,8 +158,8 @@ export default function Dashboard() {
       <main className="mx-auto max-w-7xl p-6">
         {/* Quick Actions */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <a
-            href="/collection/new"
+          <Link
+            to="/collection/new"
             className="group rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary-500"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/20">
@@ -166,10 +167,10 @@ export default function Dashboard() {
             </div>
             <h3 className="mt-4 text-lg font-semibold text-foreground">Nueva Coleccion</h3>
             <p className="mt-2 text-sm text-muted-foreground">Crear una base de conocimiento</p>
-          </a>
+          </Link>
 
-          <a
-            href="/admin"
+          <Link
+            to="/admin"
             className="group rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary-500"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/20">
@@ -177,10 +178,10 @@ export default function Dashboard() {
             </div>
             <h3 className="mt-4 text-lg font-semibold text-foreground">Configuracion</h3>
             <p className="mt-2 text-sm text-muted-foreground">API keys, modelos, parametros</p>
-          </a>
+          </Link>
 
-          <a
-            href="/docs"
+          <Link
+            to="/docs"
             className="group rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary-500"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/20">
@@ -188,7 +189,7 @@ export default function Dashboard() {
             </div>
             <h3 className="mt-4 text-lg font-semibold text-foreground">Documentacion</h3>
             <p className="mt-2 text-sm text-muted-foreground">Guia de uso y API</p>
-          </a>
+          </Link>
         </div>
 
         {/* Collections */}
@@ -202,13 +203,13 @@ export default function Dashboard() {
             <div className="rounded-lg bg-muted p-8 text-center">
               <Database className="mx-auto h-10 w-10 text-muted-foreground" />
               <p className="mt-3 text-sm text-muted-foreground">No hay colecciones. Crea una nueva para comenzar.</p>
-              <a
-                href="/collection/new"
+              <Link
+                to="/collection/new"
                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
               >
                 <Plus className="h-4 w-4" />
                 Nueva Coleccion
-              </a>
+              </Link>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -218,7 +219,7 @@ export default function Dashboard() {
                   className="group relative rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary-500"
                 >
                   <div className="flex items-start justify-between">
-                    <a href={`/collection/${c.id}`} className="flex-1">
+                    <Link to={`/collection/${c.id}`} className="flex-1">
                       <h3 className="font-semibold text-foreground">{c.name}</h3>
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>
@@ -226,7 +227,7 @@ export default function Dashboard() {
                       <p className="mt-2 text-xs text-muted-foreground">
                         {new Date(c.created_at).toLocaleDateString()}
                       </p>
-                    </a>
+                    </Link>
                     <button
                       onClick={() => deleteCollection(c.id)}
                       className="ml-2 rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
@@ -235,20 +236,20 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <div className="mt-3 flex gap-2">
-                    <a
-                      href={`/collection/${c.id}/chat`}
+                    <Link
+                      to={`/collection/${c.id}/chat`}
                       className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
                     >
                       <MessageSquare className="h-3 w-3" />
                       Chat
-                    </a>
-                    <a
-                      href={`/collection/${c.id}/analysis`}
+                    </Link>
+                    <Link
+                      to={`/collection/${c.id}/analysis`}
                       className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground"
                     >
                       <BarChart3 className="h-3 w-3" />
                       Analisis
-                    </a>
+                    </Link>
                   </div>
                 </div>
               ))}

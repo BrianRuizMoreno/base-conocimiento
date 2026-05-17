@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
 import { client } from '../../lib/client'
 import { useAuth } from '../../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Coins, Server, AlertTriangle, ClipboardList, Settings, Share2,
   Loader2, TrendingUp, TrendingDown, Activity, HardDrive, MemoryStick,
   Cpu, Database, FileText, CheckCircle2, XCircle, AlertCircle,
-  Eye, EyeOff, Save, RefreshCw
+  Eye, EyeOff, Save, RefreshCw, Building2, Plus, Trash2, Key
 } from 'lucide-react'
 import EntityGraph from '../../components/EntityGraph'
+import {
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar
+} from 'recharts'
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'sectors', label: 'Sectores', icon: Building2 },
   { id: 'tokens', label: 'Tokens', icon: Coins },
   { id: 'server', label: 'Servidor', icon: Server },
   { id: 'errors', label: 'Errores', icon: AlertTriangle },
@@ -40,6 +45,14 @@ export default function AdminDashboard() {
   const [errors, setErrors] = useState<any[]>([])
   const [executions, setExecutions] = useState<any[]>([])
   const [keysData, setKeysData] = useState<any>(null)
+
+  // Sectors
+  const [sectors, setSectors] = useState<any[]>([])
+  const [newSectorName, setNewSectorName] = useState('')
+  const [newSectorSlug, setNewSectorSlug] = useState('')
+  const [newSectorDesc, setNewSectorDesc] = useState('')
+  const [newTokenName, setNewTokenName] = useState('')
+  const [sectorTokens, setSectorTokens] = useState<any[]>([])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -97,6 +110,15 @@ export default function AdminDashboard() {
         case 'executions': {
           const res = await client.get(`/v1/admin/executions?period=${period}`)
           if (res.data.success) setExecutions(res.data.data || [])
+          break
+        }
+        case 'sectors': {
+          const [sRes, tRes] = await Promise.all([
+            client.get('/v1/admin/sectors'),
+            client.get('/v1/admin/tokens')
+          ])
+          if (sRes.data.success) setSectors(sRes.data.data || [])
+          if (tRes.data.success) setSectorTokens(tRes.data.data || [])
           break
         }
         case 'settings': {
@@ -196,6 +218,72 @@ export default function AdminDashboard() {
     }
   }
 
+  // Sector CRUD
+  const createSector = async () => {
+    if (!newSectorName.trim() || !newSectorSlug.trim()) return
+    setLoading(true)
+    try {
+      const res = await client.post('/v1/admin/sectors', {
+        name: newSectorName.trim(),
+        slug: newSectorSlug.trim(),
+        description: newSectorDesc.trim() || undefined,
+      })
+      if (res.data.success) {
+        setNewSectorName('')
+        setNewSectorSlug('')
+        setNewSectorDesc('')
+        fetchTabData('sectors')
+      } else {
+        setError(res.data.error || 'Error al crear sector')
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al crear sector')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteSector = async (id: string) => {
+    if (!confirm('Eliminar este sector?')) return
+    try {
+      await client.delete(`/v1/admin/sectors/${id}`)
+      fetchTabData('sectors')
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al eliminar')
+    }
+  }
+
+  const createSectorToken = async (sectorId: string) => {
+    if (!newTokenName.trim()) return
+    setLoading(true)
+    try {
+      const res = await client.post(`/v1/admin/sectors/${sectorId}/tokens`, {
+        name: newTokenName.trim(),
+      })
+      if (res.data.success) {
+        alert(`Token generado: ${res.data.data.token}\n\nGuardalo ahora, no se mostrara de nuevo.`)
+        setNewTokenName('')
+        fetchTabData('sectors')
+      } else {
+        setError(res.data.error || 'Error al generar token')
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al generar token')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const revokeToken = async (tokenId: string) => {
+    if (!confirm('Revocar este token?')) return
+    try {
+      await client.delete(`/v1/admin/tokens/${tokenId}`)
+      fetchTabData('sectors')
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al revocar')
+    }
+  }
+
   if (!isAuthenticated) return null
 
   return (
@@ -204,17 +292,17 @@ export default function AdminDashboard() {
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
-            <a href="/" className="text-xl font-bold text-foreground hover:text-primary-600">
+            <Link to="/" className="text-xl font-bold text-foreground hover:text-primary-600">
               RAG System
-            </a>
+            </Link>
             <span className="text-sm text-muted-foreground">/ Admin</span>
           </div>
-          <a
-            href="/"
+          <Link
+            to="/"
             className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-accent"
           >
             Volver
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -304,6 +392,46 @@ export default function AdminDashboard() {
               <StatCard label="Errores" value={metrics.errors ?? 0} icon={AlertTriangle} color="red" />
               <StatCard label="Ejecuciones" value={metrics.executions ?? 0} icon={ClipboardList} color="orange" />
             </div>
+
+            {/* Charts */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h3 className="mb-4 text-sm font-medium text-foreground">Recursos del sistema</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[
+                      { name: 'Colecciones', valor: metrics.stats?.collections ?? 0 },
+                      { name: 'Documentos', valor: metrics.stats?.documents ?? 0 },
+                      { name: 'Chunks', valor: metrics.stats?.chunks ?? 0 },
+                      { name: 'Entidades', valor: metrics.stats?.entities ?? 0 },
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--card)' }} />
+                      <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h3 className="mb-4 text-sm font-medium text-foreground">Uso de tokens</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[
+                      { name: 'Entrada', valor: metrics.tokens?.total_in ?? 0 },
+                      { name: 'Salida', valor: metrics.tokens?.total_out ?? 0 },
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--card)' }} />
+                      <Bar dataKey="valor" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -345,6 +473,127 @@ export default function AdminDashboard() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Sectors Tab */}
+        {activeTab === 'sectors' && !loading && (
+          <div className="space-y-6">
+            {/* Create sector */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">Crear Sector</h2>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Nombre</label>
+                  <input
+                    type="text"
+                    value={newSectorName}
+                    onChange={(e) => setNewSectorName(e.target.value)}
+                    placeholder="Ej: Ventas"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Slug</label>
+                  <input
+                    type="text"
+                    value={newSectorSlug}
+                    onChange={(e) => setNewSectorSlug(e.target.value)}
+                    placeholder="Ej: ventas"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Descripcion</label>
+                  <input
+                    type="text"
+                    value={newSectorDesc}
+                    onChange={(e) => setNewSectorDesc(e.target.value)}
+                    placeholder="Opcional"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={createSector}
+                disabled={loading || !newSectorName.trim() || !newSectorSlug.trim()}
+                className="mt-4 flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+                Crear Sector
+              </button>
+            </div>
+
+            {/* Sectors list */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">Sectores</h2>
+              {sectors.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No hay sectores creados.</p>
+              ) : (
+                <div className="space-y-4">
+                  {sectors.map((sector) => (
+                    <div key={sector.id} className="rounded-lg border border-border bg-background p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{sector.name}</p>
+                          <p className="text-xs text-muted-foreground">{sector.slug}</p>
+                          {sector.description && <p className="text-sm text-muted-foreground">{sector.description}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => deleteSector(sector.id)}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                            aria-label={`Eliminar sector ${sector.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Tokens for this sector */}
+                      <div className="mt-3">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Tokens</p>
+                        <div className="space-y-2">
+                          {sectorTokens.filter((t: any) => t.sector_id === sector.id).map((token: any) => (
+                            <div key={token.id} className="flex items-center justify-between rounded-md bg-muted px-3 py-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Key className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-foreground">{token.name}</span>
+                                <span className={`rounded-full px-1.5 py-0.5 text-xs ${token.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                  {token.is_active ? 'Activo' : 'Revocado'}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => revokeToken(token.id)}
+                                disabled={!token.is_active}
+                                className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                              >
+                                Revocar
+                              </button>
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={newTokenName}
+                              onChange={(e) => setNewTokenName(e.target.value)}
+                              placeholder="Nombre del token"
+                              className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                            />
+                            <button
+                              onClick={() => createSectorToken(sector.id)}
+                              disabled={!newTokenName.trim()}
+                              className="rounded-md bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700 disabled:opacity-50"
+                            >
+                              Generar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

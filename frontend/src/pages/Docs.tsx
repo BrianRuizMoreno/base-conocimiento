@@ -1,11 +1,13 @@
+import { Link } from 'react-router-dom'
+
 export default function Docs() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center px-4 py-4">
-          <a href="/" className="text-xl font-bold text-foreground hover:text-primary-600">
+          <Link to="/" className="text-xl font-bold text-foreground hover:text-primary-600">
             RAG System
-          </a>
+          </Link>
         </div>
       </header>
       <main className="mx-auto max-w-4xl p-6">

@@ -18,6 +18,16 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Sector(Base):
+    __tablename__ = "sectors"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(100), nullable=False)
+    slug = Column(String(100), unique=True, nullable=False)
+    description = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Collection(Base):
     __tablename__ = "collections"
     
@@ -25,6 +35,7 @@ class Collection(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    sector_id = Column(UUID(as_uuid=True), ForeignKey("sectors.id", ondelete="SET NULL"), nullable=True)
     is_public = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -97,6 +108,7 @@ class IntegrationKey(Base):
     key_prefix = Column(String(8), nullable=False)
     name = Column(String(100))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    sector_id = Column(UUID(as_uuid=True), ForeignKey("sectors.id", ondelete="SET NULL"), nullable=True)
     scoped_collections = Column(ARRAY(UUID(as_uuid=True)), default=[])
     is_active = Column(Boolean, default=True)
     last_used_at = Column(DateTime)

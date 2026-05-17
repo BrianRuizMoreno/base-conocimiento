@@ -9,8 +9,9 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 from app.db.database import get_db
-from app.db.models import TokenUsage, ExecutionLog, ErrorLog, ServerMetrics, Collection, Document, Chunk, Entity
+from app.db.models import TokenUsage, ExecutionLog, ErrorLog, ServerMetrics, Collection, Document, Chunk, Entity, Sector, IntegrationKey
 from app.api.auth import require_auth
+from app.core.security import generate_api_key, hash_api_key
 
 router = APIRouter()
 
@@ -180,6 +181,162 @@ async def get_errors(
     )
 
 
+class SectorCreate(BaseModel):
+    name: str
+    slug: str
+    description: str | None = None
+
+
+class SectorUpdate(BaseModel):
+    name: str | None = None
+    slug: str | None = None
+    description: str | None = None
+
+
+@router.get("/sectors", response_model=ApiResponse)
+async def list_sectors(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """List all sectors."""
+    result = await db.execute(select(Sector).order_by(Sector.name))
+    sectors = result.scalars().all()
+    return ApiResponse(
+        success=True,
+        data=[{
+            "id": str(s.id),
+            "name": s.name,
+            "slug": s.slug,
+            "description": s.description,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        } for s in sectors]
+    )
+
+
+@router.post("/sectors", response_model=ApiResponse)
+async def create_sector(
+    request: SectorCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """Create a new sector."""
+    # Check if slug already exists
+    existing = await db.execute(select(Sector).where(Sector.slug == request.slug))
+    if existing.scalar_one_or_none():
+        return ApiResponse(success=False, error=f"El slug '{request.slug}' ya existe")
+    
+    sector = Sector(
+        name=request.name,
+        slug=request.slug,
+        description=request.description,
+    )
+    db.add(sector)
+    await db.commit()
+    await db.refresh(sector)
+    return ApiResponse(
+        success=True,
+        data={
+            "id": str(sector.id),
+            "name": sector.name,
+            "slug": sector.slug,
+        }
+    )
+
+
+@router.patch("/sectors/{sector_id}", response_model=ApiResponse)
+async def update_sector(
+    sector_id: UUID,
+    request: SectorUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """Update a sector."""
+    result = await db.execute(select(Sector).where(Sector.id == sector_id))
+    sector = result.scalar_one_or_none()
+    if not sector:
+        return ApiResponse(success=False, error="Sector no encontrado")
+    
+    if request.name is not None:
+        sector.name = request.name
+    if request.slug is not None:
+        sector.slug = request.slug
+    if request.description is not None:
+        sector.description = request.description
+    
+    await db.commit()
+    await db.refresh(sector)
+    return ApiResponse(
+        success=True,
+        data={
+            "id": str(sector.id),
+            "name": sector.name,
+            "slug": sector.slug,
+        }
+    )
+
+
+@router.delete("/sectors/{sector_id}", response_model=ApiResponse)
+async def delete_sector(
+    sector_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """Delete a sector (collections lose their sector_id)."""
+    result = await db.execute(select(Sector).where(Sector.id == sector_id))
+    sector = result.scalar_one_or_none()
+    if not sector:
+        return ApiResponse(success=False, error="Sector no encontrado")
+    
+    await db.execute(select(Sector).where(Sector.id == sector_id))
+    await db.commit()
+    return ApiResponse(success=True, data={"message": "Sector eliminado"})
+
+
+@router.get("/sectors/{sector_id}/collections", response_model=ApiResponse)
+async def get_sector_collections(
+    sector_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """Get collections assigned to a sector."""
+    result = await db.execute(
+        select(Collection).where(Collection.sector_id == sector_id)
+    )
+    collections = result.scalars().all()
+    return ApiResponse(
+        success=True,
+        data=[{
+            "id": str(c.id),
+            "name": c.name,
+            "description": c.description,
+        } for c in collections]
+    )
+
+
+@router.post("/sectors/{sector_id}/collections/{collection_id}", response_model=ApiResponse)
+async def assign_collection_to_sector(
+    sector_id: UUID,
+    collection_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """Assign a collection to a sector."""
+    # Verify sector exists
+    sector_result = await db.execute(select(Sector).where(Sector.id == sector_id))
+    if not sector_result.scalar_one_or_none():
+        return ApiResponse(success=False, error="Sector no encontrado")
+    
+    # Update collection
+    coll_result = await db.execute(select(Collection).where(Collection.id == collection_id))
+    collection = coll_result.scalar_one_or_none()
+    if not collection:
+        return ApiResponse(success=False, error="Coleccion no encontrada")
+    
+    collection.sector_id = sector_id
+    await db.commit()
+    return ApiResponse(success=True, data={"message": "Coleccion asignada al sector"})
+
+
 @router.get("/server", response_model=ApiResponse)
 async def get_server_status(
     db: AsyncSession = Depends(get_db),
@@ -230,3 +387,99 @@ async def get_server_status(
             }
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# Sector Tokens
+# ---------------------------------------------------------------------------
+
+class TokenCreate(BaseModel):
+    name: str
+    expires_at: datetime | None = None
+
+
+@router.post("/sectors/{sector_id}/tokens", response_model=ApiResponse)
+async def create_sector_token(
+    sector_id: UUID,
+    request: TokenCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """Generate an API token scoped to a sector."""
+    # Verify sector exists
+    sector_result = await db.execute(select(Sector).where(Sector.id == sector_id))
+    if not sector_result.scalar_one_or_none():
+        return ApiResponse(success=False, error="Sector no encontrado")
+    
+    # Generate token
+    full_key, prefix = generate_api_key()
+    key_hash = hash_api_key(full_key)
+    
+    token = IntegrationKey(
+        key_hash=key_hash,
+        key_prefix=prefix,
+        name=request.name,
+        sector_id=sector_id,
+        is_active=True,
+        expires_at=request.expires_at,
+    )
+    db.add(token)
+    await db.commit()
+    await db.refresh(token)
+    
+    return ApiResponse(
+        success=True,
+        data={
+            "token": full_key,  # Show only once
+            "name": token.name,
+            "sector_id": str(sector_id),
+            "expires_at": token.expires_at.isoformat() if token.expires_at else None,
+            "message": "Guarda este token ahora. No se mostrara de nuevo.",
+        }
+    )
+
+
+@router.get("/tokens", response_model=ApiResponse)
+async def list_tokens(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """List all integration tokens."""
+    result = await db.execute(
+        select(IntegrationKey, Sector)
+        .outerjoin(Sector, IntegrationKey.sector_id == Sector.id)
+        .order_by(IntegrationKey.created_at.desc())
+    )
+    rows = result.all()
+    
+    return ApiResponse(
+        success=True,
+        data=[{
+            "id": str(t.id),
+            "name": t.name,
+            "prefix": t.key_prefix,
+            "sector_id": str(t.sector_id) if t.sector_id else None,
+            "sector_name": s.name if s else None,
+            "is_active": t.is_active,
+            "last_used_at": t.last_used_at.isoformat() if t.last_used_at else None,
+            "expires_at": t.expires_at.isoformat() if t.expires_at else None,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+        } for t, s in rows]
+    )
+
+
+@router.delete("/tokens/{token_id}", response_model=ApiResponse)
+async def revoke_token(
+    token_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(require_auth)
+):
+    """Revoke an integration token."""
+    result = await db.execute(select(IntegrationKey).where(IntegrationKey.id == token_id))
+    token = result.scalar_one_or_none()
+    if not token:
+        return ApiResponse(success=False, error="Token no encontrado")
+    
+    token.is_active = False
+    await db.commit()
+    return ApiResponse(success=True, data={"message": "Token revocado"})

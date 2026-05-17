@@ -213,10 +213,10 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 
 ### Criterios de Aceptación
 - [ ] Token del sector "Ventas" → solo ve colecciones de Ventas en la UI y API
-- [ ] Super admin ve y gestiona todos los sectores
-- [ ] Dashboard admin muestra gráficos de tendencias, no solo tablas
-- [ ] El grafo de entidades se visualiza en el panel admin
-- [ ] Todas las vistas son completamente responsive (móvil, tablet, desktop)
+- [x] Super admin ve y gestiona todos los sectores
+- [x] Dashboard admin muestra gráficos de tendencias, no solo tablas
+- [x] El grafo de entidades se visualiza en el panel admin
+- [x] Todas las vistas son completamente responsive (móvil, tablet, desktop)
 
 ---
 
@@ -228,9 +228,10 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 | **2** | Ingesta Completa | 100% | **Alta** | — | 10 |
 | **3** | Chat Conversacional Avanzado | 100% | **Alta** | F1, F2 | 13 |
 | **4** | Grafo de Entidades | 100% | **Media** | F2 | 9 |
-| **5** | Análisis y Comparativa | 10% (placeholders) | **Media** | F1 | 7 |
-| **6** | Integración n8n | 10% (placeholders) | **Baja** | F3, F5 | 8 |
-| **7** | Sectores + Admin Completo | 50% (admin parcial) | **Media** | F4 | 12 |
+| **5** | Análisis y Comparativa | ✅ 100% | **Media** | F1 | 7 |
+| **6** | Integración n8n | ✅ 100% | **Baja** | F3, F5 | 8 |
+| **6.5** | Correcciones Seguridad/A11y | ✅ 100% | **Alta** | — | 8 |
+| **7** | Sectores + Admin Completo | 🔄 En progreso | **Media** | F4 | 12 |
 
 **Total: ~68 tareas**
 
@@ -260,8 +261,9 @@ Fase 2 ──→ Fase 3
 | Fase 2 | ✅ Completada | 100% |
 | Fase 3 | ✅ Completada | 100% |
 | Fase 4 | ✅ Completada | 100% |
-| Fase 5 | ⏳ Pendiente | 0% |
-| Fase 6 | ⏳ Pendiente | 0% |
-| Fase 7 | ⏳ Pendiente | 0% |
+| Fase 5 | ✅ Completada | 100% |
+| Fase 6 | ✅ Completada | 100% |
+| Fase 6.5 | ✅ Completada | 100% |
+| Fase 7 | 🔄 En progreso | ~60% |
 
 *Última actualización: en ejecución*
