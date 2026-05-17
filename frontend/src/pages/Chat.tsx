@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { client } from '../lib/client'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -34,6 +34,7 @@ interface Conversation {
 export default function Chat() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated } = useAuth()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -67,6 +68,33 @@ export default function Chat() {
       navigate('/')
     }
   }, [isAuthenticated, navigate])
+
+  // Handle initial question from navigation state (e.g. clicking a tag in Analysis)
+  useEffect(() => {
+    const initialQuestion = (location.state as any)?.initialQuestion
+    if (initialQuestion && id) {
+      // Create a new conversation first if none selected
+      if (!selectedConversationId) {
+        client.post('/v1/conversations', {
+          collection_id: id,
+          title: null
+        }).then(response => {
+          if (response.data.success) {
+            const newConv = response.data.data
+            setConversations(prev => [newConv, ...prev])
+            setSelectedConversationId(newConv.id)
+            sendMessage(initialQuestion)
+          }
+        }).catch(err => {
+          console.error('Error creating conversation:', err)
+        })
+      } else {
+        sendMessage(initialQuestion)
+      }
+      // Clear the state so it doesn't re-trigger
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location.state, id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -182,10 +210,10 @@ export default function Chat() {
     setRenameTitle('')
   }
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading || !id) return
+  const sendMessage = async (overrideQuestion?: string) => {
+    const question = overrideQuestion?.trim() || input.trim()
+    if (!question || loading || !id) return
 
-    const question = input.trim()
     setInput('')
     setError('')
     setLoading(true)
@@ -571,7 +599,7 @@ export default function Chat() {
               className="max-h-32 min-h-[44px] flex-1 resize-none rounded-lg border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
             >

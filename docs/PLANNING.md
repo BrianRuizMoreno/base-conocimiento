@@ -158,9 +158,9 @@ Sistema de conocimiento empresarial con RAG multi-documento para **una empresa**
 | 5.7 | Tags clickeables | Entidades y tópicos en los resúmenes son clickeables → abren búsqueda relacionada |
 
 ### Criterios de Aceptación
-- [ ] Resumen automático genera texto coherente + entidades + tópicos relevantes
-- [ ] Análisis predictivo muestra gráficos de líneas/barras con datos reales extraídos
-- [ ] Comparativa de mercado enfrenta datos internos con búsqueda web de Tavily
+- [x] Resumen automático genera texto coherente + entidades + tópicos relevantes
+- [x] Análisis predictivo muestra gráficos de líneas/barras con datos reales extraídos
+- [x] Comparativa de mercado enfrenta datos internos con búsqueda web de Tavily
 
 ---
 

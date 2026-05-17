@@ -1,7 +1,7 @@
 """Chat router with DB-persisted settings and conversation history."""
 
 import logging
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -12,6 +12,7 @@ from app.db.models import ChatSettings, ProviderKey, Conversation, Message
 from app.api.auth import require_auth
 from app.rag.engine import chat_with_collection
 from app.core.providers import ProviderFactory
+from app.core.limiter import limiter
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -96,9 +97,11 @@ Pregunta: {question}
 
 
 @router.post("/collections/{collection_id}/chat", response_model=ApiResponse)
+@limiter.limit("20/minute")
 async def chat(
     collection_id: UUID,
     request: ChatRequest,
+    req: Request,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(require_auth)
 ):

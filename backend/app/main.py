@@ -12,7 +12,11 @@ import logging
 import subprocess
 import os
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from app.api import auth, collections, documents, chat, analysis, settings, integration, admin, conversations, graph
+from app.core.limiter import limiter
 from app.core.config import settings as app_settings
 from app.db.database import engine
 
@@ -24,7 +28,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,6 +70,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Attach limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
 app.add_middleware(
