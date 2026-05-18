@@ -25,21 +25,12 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
-    # CORS (acepta JSON array o string simple/comma-separated)
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # CORS (string simple o comma-separated; ej: http://localhost:3000)
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            v = v.strip()
-            if v.startswith("["):
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError as exc:
-                    raise ValueError("CORS_ORIGINS no es un JSON valido") from exc
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
     
     # File Upload
     MAX_FILE_SIZE: int = 500 * 1024 * 1024  # 500MB

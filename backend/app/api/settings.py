@@ -87,7 +87,7 @@ async def get_settings(
         data={
             "environment": settings.ENVIRONMENT,
             "debug": settings.DEBUG,
-            "cors_origins": settings.CORS_ORIGINS,
+            "cors_origins": settings.cors_origins_list,
             "max_file_size": settings.MAX_FILE_SIZE,
             "whisper_model": settings.WHISPER_MODEL,
             "chat_config": {
