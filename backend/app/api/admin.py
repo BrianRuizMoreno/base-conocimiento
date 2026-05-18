@@ -287,7 +287,7 @@ async def delete_sector(
     if not sector:
         return ApiResponse(success=False, error="Sector no encontrado")
     
-    await db.execute(select(Sector).where(Sector.id == sector_id))
+    await db.delete(sector)
     await db.commit()
     return ApiResponse(success=True, data={"message": "Sector eliminado"})
 

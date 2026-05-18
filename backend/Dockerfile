@@ -23,5 +23,5 @@ COPY alembic/ ./alembic/
 # Create data directory
 RUN mkdir -p /app/data
 
-# Run migrations and start server
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+# Run migrations and start server (no --reload in production)
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"]
