@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  rag-backend:
+    image: ghcr.io/brianruizmoreno/rag-backend:latest
+    # O si construis local: build: ./backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - ADMIN_PIN_HASH=${ADMIN_PIN_HASH}
+      - SECRET_KEY=${SECRET_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-524288000}
+      - UPLOAD_DIR=/app/data
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - WHISPER_DEVICE=${WHISPER_DEVICE:-cpu}
+      - DEFAULT_TEMPERATURE=${DEFAULT_TEMPERATURE:-0.2}
+      - DEFAULT_TOP_P=${DEFAULT_TOP_P:-0.6}
+      - DEFAULT_MAX_TOKENS=${DEFAULT_MAX_TOKENS:-2048}
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-}
+    volumes:
+      - rag-uploads:/app/data
+    networks:
+      - rag-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  rag-frontend:
+    image: ghcr.io/brianruizmoreno/rag-frontend:latest
+    # O si construis local: build: ./frontend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    ports:
+      - "3000:80"
+    networks:
+      - rag-network
+    environment:
+      - VITE_API_URL=http://TU_IP_O_DOMINIO:8000/api/v1
+
+volumes:
+  rag-uploads:
+
+networks:
+  rag-network:
+    driver: overlay
+    attachable: true
