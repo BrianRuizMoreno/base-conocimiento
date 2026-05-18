@@ -3,7 +3,8 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, BigInteger, Float, Boolean, DateTime, Text, ForeignKey, ARRAY
-from sqlalchemy.dialects.postgresql import UUID, JSONB, VECTOR
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from pgvector.sqlalchemy import Vector
 from app.db.database import Base
 
 
@@ -70,7 +71,7 @@ class Chunk(Base):
     document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"))
     collection_id = Column(UUID(as_uuid=True), ForeignKey("collections.id", ondelete="CASCADE"))
     content = Column(Text, nullable=False)
-    embedding = Column(VECTOR(768))
+    embedding = Column(Vector(768))
     chunk_index = Column(Integer)
     hash = Column(String(64))
     metadata_ = Column("metadata", JSONB)
