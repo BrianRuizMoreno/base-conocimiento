@@ -1,195 +1,144 @@
 # Guia de Despliegue - RAG System
 
-## Requisitos del Servidor (VPS Hostinger)
+## Opcion recomendada: Docker Compose (todo automatico)
 
-- **SO:** Ubuntu 22.04 LTS
-- **RAM:** 8 GB (minimo recomendado)
-- **CPU:** 2 cores
-- **Disco:** 100 GB SSD
-- **Docker + Docker Compose** instalados
-- **PostgreSQL 15+ con pgvector** (puede ser contenedor o instancia gestionada)
+El `docker-compose.yml` incluido levanta **todo automatico**: PostgreSQL + pgvector, backend FastAPI y frontend Nginx.
 
-## Estructura del Proyecto
+### Requisitos
 
-```
-rag-system/
-├── backend/          # FastAPI + Alembic
-├── frontend/         # React + Vite + Nginx
-├── data/             # Uploads de documentos (volumen Docker)
-├── docker-compose.yml
-└── .env
-```
+- Docker + Docker Compose instalados
+- Git
 
-## 1. Preparar el Servidor
-
-### 1.1 Instalar Docker y Docker Compose
-
-```bash
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-newgrp docker
-```
-
-### 1.2 Preparar PostgreSQL con pgvector
-
-Si tienes PostgreSQL externo (Portainer), asegurate de que la extension `pgvector` este instalada:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-```
-
-Si prefieres levantar PostgreSQL local con Docker:
-
-```bash
-docker run -d \
-  --name rag-postgres \
-  -e POSTGRES_USER=raguser \
-  -e POSTGRES_PASSWORD=ragpass \
-  -e POSTGRES_DB=rag_system \
-  -v pgdata:/var/lib/postgresql/data \
-  -p 5432:5432 \
-  ankane/pgvector:latest
-```
-
-## 2. Configurar Variables de Entorno
-
-```bash
-cp .env.example .env
-nano .env
-```
-
-Valores minimos requeridos:
-
-```env
-DATABASE_URL=postgresql+asyncpg://raguser:ragpass@TU_IP:5432/rag_system
-ADMIN_PIN_HASH=$2b$12$...  # bcrypt hash de tu PIN
-SECRET_KEY=tu-clave-secreta-32-caracteres-minimo
-GEMINI_API_KEY=tu-api-key-de-gemini
-ENVIRONMENT=production
-CORS_ORIGINS=https://tu-dominio.com
-```
-
-**Generar PIN hash:**
-
-```bash
-python3 -c "import bcrypt; print(bcrypt.hashpw(b'TU_PIN', bcrypt.gensalt()).decode())"
-```
-
-**Generar SECRET_KEY:**
-
-```bash
-openssl rand -base64 32
-```
-
-## 3. Desplegar con Docker Compose
+### 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/BrianRuizMoreno/base-conocimiento.git
 cd base-conocimiento
 ```
 
-### Opcion A: Despliegue local/directo
+### 2. Configurar variables de entorno (solo 2 campos)
+
+```bash
+cp .env.example .env
+```
+
+Edita `.env` y **solo cambia estos 2 valores**:
+
+```env
+ADMIN_PIN_HASH=          # Hash bcrypt de tu PIN (ver paso 3)
+SECRET_KEY=              # Clave aleatoria de 32+ caracteres (ver paso 4)
+```
+
+**Deja todo lo demas igual.** PostgreSQL ya esta configurado para Docker.
+
+### 3. Generar tu PIN de admin
+
+```bash
+# En cualquier terminal con Python:
+python3 -c "import bcrypt; print(bcrypt.hashpw(b'TU_PIN_AQUI', bcrypt.gensalt()).decode())"
+```
+
+Ejemplo si tu PIN es `1234`:
+```bash
+python3 -c "import bcrypt; print(bcrypt.hashpw(b'1234', bcrypt.gensalt()).decode())"
+```
+
+Copia el hash resultado y pegalo en `ADMIN_PIN_HASH` del `.env`.
+
+### 4. Generar SECRET_KEY
+
+```bash
+openssl rand -base64 32
+```
+
+Copia el resultado y pegalo en `SECRET_KEY` del `.env`.
+
+### 5. Levantar todo
 
 ```bash
 docker-compose up -d --build
 ```
 
-Esto construye y levanta:
-- **Backend:** http://localhost:8000
-- **Frontend:** http://localhost:3000
+Esto construye y levanta 3 servicios:
+- **PostgreSQL + pgvector:** puerto `5432`
+- **Backend FastAPI:** `http://TU_IP:8000`
+- **Frontend Nginx:** `http://TU_IP:3000`
 
-### Opcion B: Despliegue con Traefik (recomendado para produccion)
-
-Si usas Traefik como reverse proxy:
-
-```bash
-docker-compose -f docker-compose-traefik.yml up -d --build
-```
-
-Configura tus labels de Traefik en el `docker-compose-traefik.yml`.
-
-## 4. Verificar el Despliegue
-
-### 4.1 Health check
+### 6. Verificar que funciona
 
 ```bash
+# Espera 20 segundos a que todo inicie...
 curl http://localhost:8000/api/v1/health
 ```
 
 Respuesta esperada:
 ```json
-{"status": "ok", "version": "1.0.0", "database": "connected"}
+{"status": "ok", "database": "connected"}
 ```
 
-### 4.2 Ver logs
-
-```bash
-# Backend
-docker logs -f rag-backend
-
-# Frontend
-docker logs -f rag-frontend
-```
-
-### 4.3 Acceder al panel
+### 7. Acceder al sistema
 
 Abre en tu navegador:
-- Sin dominio: `http://TU_IP:3000`
-- Con dominio: `https://tu-dominio.com`
-
-Ingresa el PIN que configuraste en `ADMIN_PIN_HASH`.
-
-## 5. Primer Uso
-
-1. Ve a **Admin > Configuracion**
-2. Agrega al menos una **API Key de Gemini** (gratis en aistudio.google.com)
-3. Crea una **Coleccion** desde el Dashboard
-4. Sube documentos (PDF, DOCX, imagenes, audio, video)
-5. Ve al **Chat** y empieza a preguntar
-
-## 6. Configurar n8n (Opcional)
-
-1. En **Admin > Configuracion**, configura `N8N_WEBHOOK_URL`
-2. Ve a **Admin > Sectores** y crea un sector
-3. Genera un **Token de sector** para integracion
-4. Usa el token en n8n con header `X-API-Key`
-
-## 7. Mantenimiento
-
-### Actualizar despues de git pull
-
-```bash
-git pull origin main
-docker-compose up -d --build
+```
+http://TU_IP:3000
 ```
 
-### Backup de datos
-
-```bash
-# Backup PostgreSQL
-docker exec rag-postgres pg_dump -U raguser rag_system > backup.sql
-
-# Backup uploads
-rsync -av data/ /ruta/backup/data/
-```
-
-### Escalado
-
-Si necesitas mas capacidad:
-- Aumenta `workers` en `backend/Dockerfile` (actualmente 2)
-- Usa Redis para cachear embeddings
-- Configura Celery para procesamiento en background
-
-## Troubleshooting
-
-| Problema | Solucion |
-|---|---|
-| `alembic upgrade head` falla | Verifica `DATABASE_URL` y que PostgreSQL tenga pgvector |
-| Frontend no carga API | Verifica `CORS_ORIGINS` y que nginx apunte al backend correcto |
-| OCR no funciona | Verifica que `GEMINI_API_KEY` este configurada |
-| Archivos >20MB fallan | Verifica `MAX_FILE_SIZE` y espacio en disco |
-| "PIN invalido" | Verifica que `ADMIN_PIN_HASH` sea bcrypt valido |
+Ingresa el PIN que pusiste en el paso 3.
 
 ---
 
-**URL del Repositorio:** https://github.com/BrianRuizMoreno/base-conocimiento
+## Primer uso: agregar API Key de Gemini
+
+1. Entra al panel: **Admin > Configuracion**
+2. En "API Keys", selecciona proveedor **Gemini**
+3. Pega tu API key de [Google AI Studio](https://aistudio.google.com/app/apikey)
+4. Dale un label (ej: "Key principal") y prioridad `0`
+5. Click en **Agregar**
+
+Ahora el sistema puede hacer OCR, chat y embeddings.
+
+---
+
+## Comandos utiles
+
+```bash
+# Ver logs
+docker-compose logs -f rag-backend
+docker-compose logs -f rag-postgres
+
+# Reiniciar
+docker-compose restart
+
+# Actualizar despues de git pull
+git pull origin main
+docker-compose up -d --build
+
+# Detener todo
+docker-compose down
+
+# Detener y borrar datos (CUIDADO)
+docker-compose down -v
+```
+
+---
+
+## Opcion alternativa: PostgreSQL externo (Portainer)
+
+Si ya tienes PostgreSQL en Portainer u otro servidor:
+
+1. Asegurate de que tenga la extension `pgvector`:
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS vector;
+   ```
+
+2. Cambia `DATABASE_URL` en `.env`:
+   ```env
+   DATABASE_URL=postgresql+asyncpg://TU_USER:TU_PASS@TU_IP:5432/TU_DB
+   ```
+
+3. Borra o comenta el servicio `postgres` del `docker-compose.yml`.
+
+4. Levanta solo backend + frontend:
+   ```bash
+   docker-compose up -d --build rag-backend rag-frontend
+   ```
